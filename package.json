@@ -1,8 +1,15 @@
 {
-  "name": "remove-background-webgpu",
+  "name": "bg-remover-bennet",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "author": "Bennet Nkolele <bennet@example.com>",
+  "description": "A powerful React + Vite application that removes backgrounds from images directly in your browser",
+  "homepage": "https://github.com/Benighter/bg-remover-bennet",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Benighter/bg-remover-bennet.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
