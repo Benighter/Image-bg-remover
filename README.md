@@ -8,10 +8,10 @@ Experience BG Remover in action: [Live Demo](https://your-demo-url.vercel.app)
 
 ## 📸 Screenshots
 
-![BG Remover Interface](./screenshots/main-interface.png)
+![BG Remover Interface](./public/BG%20Remover%20Interface.png)
 *Clean and intuitive interface for background removal*
 
-![Before and After](./screenshots/before-after.png)
+![Before and After](./public/meta.jpg)
 *Example of background removal results*
 
 ## ✨ Features
