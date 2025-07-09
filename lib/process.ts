@@ -188,20 +188,37 @@ export function getModelInfo(): ModelInfo {
   };
 }
 
-export async function processImage(image: File): Promise<File> {
+export interface ProcessingProgressCallback {
+  (progress: number, stage: string): void;
+}
+
+export async function processImage(
+  image: File,
+  progressCallback?: ProcessingProgressCallback
+): Promise<File> {
   if (!state.model || !state.processor) {
     throw new Error("Model not initialized. Call initializeModel() first.");
   }
 
-  const img = await RawImage.fromURL(URL.createObjectURL(image));
-  
+  const reportProgress = (progress: number, stage: string) => {
+    if (progressCallback) {
+      progressCallback(Math.max(0, Math.min(100, progress)), stage);
+    }
+  };
+
   try {
+    reportProgress(5, "Loading image");
+    const img = await RawImage.fromURL(URL.createObjectURL(image));
+
+    reportProgress(15, "Preprocessing image");
     // Pre-process image
     const { pixel_values } = await state.processor(img);
-    
+
+    reportProgress(30, "Running AI model");
     // Predict alpha matte
     const { output } = await state.model({ input: pixel_values });
 
+    reportProgress(60, "Processing mask");
     // Resize mask back to original size
     const maskData = (
       await RawImage.fromTensor(output[0].mul(255).to("uint8")).resize(
@@ -210,33 +227,38 @@ export async function processImage(image: File): Promise<File> {
       )
     ).data;
 
+    reportProgress(75, "Creating output image");
     // Create new canvas
     const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext("2d");
     if(!ctx) throw new Error("Could not get 2d context");
-    
+
     // Draw original image output to canvas
     ctx.drawImage(img.toCanvas(), 0, 0);
 
+    reportProgress(85, "Applying background removal");
     // Update alpha channel
     const pixelData = ctx.getImageData(0, 0, img.width, img.height);
     for (let i = 0; i < maskData.length; ++i) {
       pixelData.data[4 * i + 3] = maskData[i];
     }
     ctx.putImageData(pixelData, 0, 0);
-    
+
+    reportProgress(95, "Finalizing image");
     // Convert canvas to blob
-    const blob = await new Promise<Blob>((resolve, reject) => 
+    const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error("Failed to create blob")), 
+        (blob) => blob ? resolve(blob) : reject(new Error("Failed to create blob")),
         "image/png"
       )
     );
-    
+
     const [fileName] = image.name.split(".");
     const processedFile = new File([blob], `${fileName}-bg-blasted.png`, { type: "image/png" });
+
+    reportProgress(100, "Complete");
     return processedFile;
   } catch (error) {
     console.error("Error processing image:", error);
@@ -244,20 +266,40 @@ export async function processImage(image: File): Promise<File> {
   }
 }
 
-export async function processImages(images: File[]): Promise<File[]> {
+export interface BatchProcessingProgressCallback {
+  (imageIndex: number, totalImages: number, imageProgress: number, stage: string): void;
+}
+
+export async function processImages(
+  images: File[],
+  progressCallback?: BatchProcessingProgressCallback
+): Promise<File[]> {
   console.log("Processing images...");
   const processedFiles: File[] = [];
-  
-  for (const image of images) {
+
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i];
     try {
-      const processedFile = await processImage(image);
+      const imageProgressCallback: ProcessingProgressCallback = (progress, stage) => {
+        if (progressCallback) {
+          progressCallback(i, images.length, progress, stage);
+        }
+      };
+
+      const processedFile = await processImage(image, imageProgressCallback);
       processedFiles.push(processedFile);
       console.log("Successfully processed image", image.name);
     } catch (error) {
       console.error("Error processing image", image.name, error);
+      // Continue processing other images even if one fails
     }
   }
-  
+
   console.log("Processing images done");
   return processedFiles;
+}
+
+// Legacy function for backward compatibility
+export async function processImageLegacy(image: File): Promise<File> {
+  return processImage(image);
 }
