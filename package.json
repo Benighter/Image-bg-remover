@@ -5,10 +5,10 @@
   "type": "module",
   "author": "Bennet Nkolele <bennet@example.com>",
   "description": "A powerful React + Vite application that removes backgrounds from images directly in your browser",
-  "homepage": "https://github.com/Benighter/bg-remover-bennet",
+  "homepage": "https://github.com/Benighter/Image-bg-remover",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Benighter/bg-remover-bennet.git"
+    "url": "https://github.com/Benighter/Image-bg-remover.git"
   },
   "scripts": {
     "dev": "vite",
