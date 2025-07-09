@@ -4,7 +4,7 @@ A powerful React + Vite application that removes backgrounds from images directl
 
 ## 🌟 Live Demo
 
-Experience BG Remover in action: [Live Demo](https://your-demo-url.vercel.app)
+Experience BG Remover in action: **[🚀 Live Demo](https://bg-remover-lac.vercel.app/)**
 
 ## 📸 Screenshots
 
@@ -38,6 +38,15 @@ Experience BG Remover in action: [Live Demo](https://your-demo-url.vercel.app)
 - 📋 **Drag & drop** - Easy file upload with drag and drop support
 - ⚡ **Fast processing** - Optimized for quick background removal
 - 🔄 **Batch processing** - Process multiple images efficiently
+
+### 🚀 Advanced Job Management
+- 📊 **Real-time progress tracking** - Live progress bars with detailed status updates
+- 🔄 **Background job processing** - Continue using the app while images process
+- 📦 **Smart batch grouping** - Automatic session management and batch organization
+- 🔔 **Intelligent notifications** - Browser and in-app notifications for job completion
+- 📋 **Comprehensive job queue** - Dedicated interface for managing all processing jobs
+- ⏱️ **Time estimation** - Accurate remaining time predictions for active jobs
+- 🎯 **Job controls** - Cancel, retry, and monitor individual jobs or entire batches
 
 ## Technical Implementation
 
