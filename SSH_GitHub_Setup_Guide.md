@@ -7,14 +7,7 @@
 - **Personal repos (Benighter)**: SSH by default (works everywhere)
 - **Work repos (MehloNkolele)**: HTTPS (works even without Absa WiFi)
 
-### One-Command Setup
-
-```bash
-# Run the automated hybrid setup
-powershell -ExecutionPolicy Bypass -File setup_hybrid_git_config.ps1
-```
-
-### Manual Setup (if needed)
+### Complete Setup Commands
 
 ```bash
 # 1. Create multi-account SSH config
@@ -265,21 +258,128 @@ This is the optimal setup that combines the best of both worlds:
 4. **VS Code Integration**: Works seamlessly in all editors and IDEs
 5. **Network Agnostic**: Work repos accessible from any network
 
-### Complete Setup Script
+### Complete Setup Commands
 
-Run this single command to set up everything:
+**Step 1: Create SSH Configuration**
+```powershell
+# Create multi-account SSH config
+@'
+# Personal GitHub account (Benighter) - SSH by default
+Host github.com-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  AddKeysToAgent yes
 
-```bash
-powershell -ExecutionPolicy Bypass -File setup_hybrid_git_config.ps1
+# Organization GitHub account (MehloNkolele) - SSH fallback
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_mehlo
+  IdentitiesOnly yes
+  AddKeysToAgent yes
+
+# Default GitHub configuration (for personal account - Benighter)
+Host github.com
+  HostName github.com
+  Port 22
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  AddKeysToAgent yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 10
+'@ | Out-File -FilePath ~/.ssh/config -Encoding ASCII
 ```
 
-### What the Script Does
+**Step 2: Configure Git for Hybrid Authentication**
+```powershell
+# Set up Git credential manager for HTTPS
+git config --global credential.helper manager
+git config --global credential.useHttpPath true
 
-1. **SSH Configuration**: Sets up SSH keys for both accounts
-2. **HTTPS Configuration**: Configures credential manager for work repos
-3. **URL Rewriting**: Automatically converts work SSH URLs to HTTPS
-4. **Directory-Based Config**: Different Git settings based on folder location
-5. **VS Code Integration**: Updates VS Code settings for Git multi-account support
+# Set up URL rewriting for organization repositories to use HTTPS
+git config --global url."https://github.com/absa-group/".insteadOf "git@github.com-work:absa-group/"
+
+# Set default personal configuration
+git config --global user.name "Benighter"
+git config --global user.email "111303968+Benighter@users.noreply.github.com"
+
+# Set other global Git settings
+git config --global init.defaultBranch main
+git config --global pull.rebase false
+git config --global push.default simple
+git config --global core.autocrlf true
+git config --global core.editor "code --wait"
+```
+
+**Step 3: Create Work Directory and Configuration**
+```powershell
+# Create work directory
+$workDir = "C:\Users\AB038N8\OneDrive - Absa\Desktop\Programming\Work"
+New-Item -ItemType Directory -Path $workDir -Force
+
+# Create work-specific Git configuration
+@'
+[user]
+    name = Mehlo Nkolele
+    email = mehlo.nkolele@absa.africa
+
+[url "https://github.com/absa-group/"]
+    insteadOf = git@github.com:absa-group/
+    insteadOf = git@github.com-work:absa-group/
+
+[credential]
+    helper = manager
+    useHttpPath = true
+'@ | Out-File -FilePath "$env:USERPROFILE\.gitconfig-work" -Encoding UTF8
+
+# Set up conditional Git configuration
+git config --global includeIf."gitdir:C:/Users/AB038N8/OneDrive - Absa/Desktop/Programming/Work/".path "~/.gitconfig-work"
+```
+
+**Step 4: Update VS Code Settings**
+```powershell
+# Backup current VS Code settings
+$settingsPath = "$env:APPDATA\Code\User\settings.json"
+Copy-Item $settingsPath "$settingsPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+
+# Add Git-specific settings to VS Code
+$settingsContent = Get-Content $settingsPath -Raw | ConvertFrom-Json
+
+# Add Git multi-account settings
+$gitSettings = @{
+    "git.useCommitInputAsStashMessage" = $true
+    "git.confirmSync" = $false
+    "git.fetchOnPull" = $true
+    "git.showPushSuccessNotification" = $true
+    "git.allowForcePush" = $false
+    "git.useForcePushWithLease" = $true
+    "git.defaultCloneDirectory" = "C:\Users\AB038N8\OneDrive - Absa\Desktop\Programming"
+    "git.terminalAuthentication" = $true
+    "git.useIntegratedAskPass" = $true
+}
+
+foreach ($key in $gitSettings.Keys) {
+    $settingsContent | Add-Member -NotePropertyName $key -NotePropertyValue $gitSettings[$key] -Force
+}
+
+$settingsContent | ConvertTo-Json -Depth 10 | Out-File -FilePath $settingsPath -Encoding UTF8
+```
+
+**Step 5: Test Configuration**
+```powershell
+# Test SSH connections
+Write-Host "Testing SSH connections..."
+ssh -T git@github.com        # Should show: Hi Benighter!
+ssh -T git@github.com-work   # Should show: Hi MehloNkolele!
+
+# Verify Git configuration
+Write-Host "Current Git configuration:"
+git config user.name    # Should show: Benighter
+git config user.email   # Should show: 111303968+Benighter@users.noreply.github.com
+```
 
 ### Directory Structure
 
@@ -665,27 +765,10 @@ git branch --set-upstream-to=origin/main main
 git push                    # Simple push to tracked remote
 ```
 
-### Multi-Account SSH Configuration Setup
-```bash
-# Create the multi-account SSH config
-powershell -Command "@'
-# Personal GitHub account (Benighter)
-Host github.com-personal
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  AddKeysToAgent yes
-
-# Organization GitHub account (MehloNkolele)
-Host github.com-work
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519_mehlo
-  IdentitiesOnly yes
-  AddKeysToAgent yes
-
-# Default GitHub configuration (for personal account - Benighter)
+### Quick Setup Summary
+```powershell
+# 1. Create SSH config
+@'
 Host github.com
   HostName github.com
   Port 22
@@ -693,11 +776,26 @@ Host github.com
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
   AddKeysToAgent yes
-  ServerAliveInterval 60
-  ServerAliveCountMax 10
-'@ | Out-File -FilePath ~/.ssh/config -Encoding ASCII"
 
-# Test both accounts
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_mehlo
+  IdentitiesOnly yes
+  AddKeysToAgent yes
+'@ | Out-File -FilePath ~/.ssh/config -Encoding ASCII
+
+# 2. Configure Git for hybrid authentication
+git config --global credential.helper manager
+git config --global url."https://github.com/absa-group/".insteadOf "git@github.com-work:absa-group/"
+git config --global user.name "Benighter"
+git config --global user.email "111303968+Benighter@users.noreply.github.com"
+
+# 3. Create work directory and config
+New-Item -ItemType Directory -Path "C:\Users\AB038N8\OneDrive - Absa\Desktop\Programming\Work" -Force
+git config --global includeIf."gitdir:C:/Users/AB038N8/OneDrive - Absa/Desktop/Programming/Work/".path "~/.gitconfig-work"
+
+# 4. Test connections
 ssh -T git@github.com        # Should show: Hi Benighter!
 ssh -T git@github.com-work   # Should show: Hi MehloNkolele!
 ```
@@ -745,27 +843,13 @@ git commit -m "Your changes"
 git push                           # Simple push!
 ```
 
-### Initial Multi-Account SSH Setup (One-Time)
-```bash
-# Step 1: Create multi-account SSH configuration
-powershell -Command "@'
-# Personal GitHub account (Benighter)
-Host github.com-personal
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  AddKeysToAgent yes
+### Hybrid Setup Summary (One-Time)
+```powershell
+# Complete hybrid setup - run these commands once
+# See "Complete Setup Commands" section above for detailed steps
 
-# Organization GitHub account (MehloNkolele)
-Host github.com-work
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519_mehlo
-  IdentitiesOnly yes
-  AddKeysToAgent yes
-
-# Default GitHub configuration (for personal account - Benighter)
+# 1. SSH Configuration
+@'
 Host github.com
   HostName github.com
   Port 22
@@ -773,15 +857,27 @@ Host github.com
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
   AddKeysToAgent yes
-  ServerAliveInterval 60
-  ServerAliveCountMax 10
-'@ | Out-File -FilePath ~/.ssh/config -Encoding ASCII"
 
-# Step 2: Test both SSH connections
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_mehlo
+  IdentitiesOnly yes
+  AddKeysToAgent yes
+'@ | Out-File -FilePath ~/.ssh/config -Encoding ASCII
+
+# 2. Git Configuration
+git config --global credential.helper manager
+git config --global url."https://github.com/absa-group/".insteadOf "git@github.com-work:absa-group/"
+git config --global user.name "Benighter"
+git config --global user.email "111303968+Benighter@users.noreply.github.com"
+
+# 3. Work Directory Setup
+New-Item -ItemType Directory -Path "C:\Users\AB038N8\OneDrive - Absa\Desktop\Programming\Work" -Force
+
+# 4. Test Setup
 ssh -T git@github.com              # Should show: Hi Benighter!
 ssh -T git@github.com-work         # Should show: Hi MehloNkolele!
-
-# Step 3: You're ready to work with both accounts!
 ```
 
 ---
