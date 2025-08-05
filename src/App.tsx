@@ -4,7 +4,7 @@ import { Images } from "./components/Images";
 import { HistoryGallery } from "./components/HistoryGallery";
 import { Toast } from "./components/Toast";
 import { updateImageInHistory } from "./services/historyService";
-import { processImages, initializeModel, getModelInfo } from "../../lib/process";
+import { processImages, initializeModel, getModelInfo } from "../lib/process";
 import { saveImageToHistory } from "./services/historyService";
 
 interface AppError {
@@ -245,7 +245,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" onPaste={handlePaste}>
-      <nav className="bg-white shadow-lg border-b border-gray-100">
+      <nav className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-100 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -309,7 +309,7 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className={`grid ${images.length === 0 ? 'lg:grid-cols-2 gap-8 lg:gap-12' : 'grid-cols-1'} items-start`}>
           {images.length === 0 && (
             <div className="flex flex-col justify-center items-start animate-fade-in">
@@ -380,7 +380,7 @@ export default function App() {
               </div>
             </div>
           )}
-          
+
           <div className={images.length === 0 ? '' : 'w-full'}>
             <div
               {...getRootProps()}
